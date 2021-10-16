@@ -9,13 +9,27 @@ class Pynion:
         self._stack = [Middleware]
         self._handler = handler
 
-        pass
+        return
 
     def __call__(self, *args, **kwargs):
-        return self._handler
+        pass
 
     def use(self, middleware: Middleware):
         """:arg middleware a Middleware object"""
 
         self.stack.append(middleware)
 
+    def pre(self, fn: Callable, name: Optional[str]):
+        pass
+
+    def post(self, fn: Callable, name: Optional[str]):
+        pass
+
+    def err(self, fn: Callable, name: Optional[str]):
+        pass
+
+    def instrument(self, fn: Callable):
+        pass
+
+    def append(self, stack: [Middleware]):
+        pass

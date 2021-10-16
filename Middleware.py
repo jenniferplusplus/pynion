@@ -8,5 +8,5 @@ class Middleware:
     def post_handler(self, fn):
         pass
 
-    def on_error(self, fn):
+    def err_handler(self, fn):
         pass
