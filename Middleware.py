@@ -1,12 +1,30 @@
+from typing import Callable, Optional
+
+sig_eject = Callable[[object], None]
+sig_handler = Callable[[object, object, Optional[sig_eject], Optional[object]], object]
+sig_err = Callable[[object, object, Optional[sig_eject], Optional[object]], object]
+
+
 class Middleware:
-    def __init__(self):
-        pass
+    def __init__(self, *, pre=sig_handler, post=sig_handler, err=sig_handler, name=str):
+        self._pre = pre
+        self._post = post
+        self._err = err
+        self._name = name
+        return
 
-    def pre_handler(self, fn):
-        pass
+    @property
+    def name(self):
+        return self._name
 
-    def post_handler(self, fn):
-        pass
+    @property
+    def pre_handler(self) -> Callable:
+        return self._pre
 
-    def err_handler(self, fn):
-        pass
+    @property
+    def post_handler(self) -> Callable:
+        return self._post
+
+    @property
+    def err_handler(self) -> Callable:
+        return self._err
