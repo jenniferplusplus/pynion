@@ -16,7 +16,7 @@ class Pynion:
         result = event
         ejected = False
 
-        def fn_eject(value):
+        def fn_abort(value):
             nonlocal result
             nonlocal ejected
             result = value
@@ -27,13 +27,13 @@ class Pynion:
         for pre in pre_handlers:
             if ejected: return result
             try:
-                result = pre(result, context, fn_eject, event)
+                result = pre(result, context, fn_abort, event)
             except Exception as ex:
                 pprint(ex)
 
         if ejected: return result
         try:
-            result = self._handler(result, context, fn_eject, event)
+            result = self._handler(result, context, fn_abort, event)
         except Exception as ex:
             pprint(ex)
 
@@ -41,7 +41,7 @@ class Pynion:
         for post in post_handlers:
             if ejected: return result
             try:
-                result = post(result, context, fn_eject, event)
+                result = post(result, context, fn_abort, event)
             except Exception as ex:
                 pprint(ex)
 
