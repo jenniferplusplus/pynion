@@ -1,6 +1,5 @@
-from collections import Callable
 from pprint import pprint
-from typing import Optional, List
+from typing import Optional, List, Callable
 
 from Middleware import Middleware, sig_handler
 
@@ -14,34 +13,34 @@ class Pynion:
 
     def __call__(self, event: dict, context: dict):
         result = event
-        ejected = False
+        aborted = False
 
-        def fn_eject(value):
+        def fn_abort(value):
             nonlocal result
-            nonlocal ejected
+            nonlocal aborted
             result = value
-            ejected = True
+            aborted = True
 
         # err_handlers = [handler.err_handler for handler in self._stack if handler.err_handler]
         pre_handlers = [handler.pre_handler for handler in self._stack if handler.pre_handler]
         for pre in pre_handlers:
-            if ejected: return result
+            if aborted: return result
             try:
-                result = pre(result, context, fn_eject, event)
+                result = pre(result, context, fn_abort, event)
             except Exception as ex:
                 pprint(ex)
 
-        if ejected: return result
+        if aborted: return result
         try:
-            result = self._handler(result, context, fn_eject, event)
+            result = self._handler(result, context, fn_abort, event)
         except Exception as ex:
             pprint(ex)
 
         post_handlers = [handler.post_handler for handler in self._stack if handler.post_handler][::-1]
         for post in post_handlers:
-            if ejected: return result
+            if aborted: return result
             try:
-                result = post(result, context, fn_eject, event)
+                result = post(result, context, fn_abort, event)
             except Exception as ex:
                 pprint(ex)
 
@@ -49,18 +48,22 @@ class Pynion:
 
     def use(self, middleware: Middleware):
         """Add a middleware handler to the stack"""
+        assert isinstance(middleware, Middleware)
         self._stack.append(middleware)
         return self
 
-    def pre(self, fn: Callable, name: Optional[str]):
+    def pre(self, fn: Callable, name=None):
+        assert callable(fn)
         self._stack.append(Middleware(pre=fn, name=name or fn.__name__))
         return self
 
-    def post(self, fn: Callable, name: Optional[str]):
+    def post(self, fn: Callable, name=None):
+        assert callable(fn)
         self._stack.append(Middleware(post=fn, name=name or fn.__name__))
         return self
 
-    def err(self, fn: Callable, name: Optional[str]):
+    def err(self, fn: Callable, name=None):
+        assert callable(fn)
         self._stack.append(Middleware(err=fn, name=name or fn.__name__))
         return self
 
