@@ -1,12 +1,27 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 
 sig_eject = Callable[[object], None]
+
 sig_handler = Callable[[object, object, Optional[sig_eject], Optional[object]], object]
-sig_err = Callable[[object, object, Optional[sig_eject], Optional[object]], object]
+"""
+:arg: the triggering event, possibly transformed by previous middleware
+:arg: the environmental context
+:arg: the abort function
+:arg: the unmodified triggering event
+:returns: the value to proceed with
+"""
+sig_err = Callable[[Exception, object, object, sig_eject], Union[object, Exception]]
+"""
+:arg: The Exception
+:arg: event
+:arg: context
+:arg: the abort function
+:returns: an exception or—if the exception is resolved—the value to proceed with 
+"""
 
 
 class Middleware:
-    def __init__(self, *, pre=sig_handler, post=sig_handler, err=sig_handler, name=str):
+    def __init__(self, *, pre=None, post=None, err=None, name=str):
         """
         :param pre: A function to be executed before the main handler logic. This could, for example perform
         validations or enrich the event argument before it reaches the handler.
