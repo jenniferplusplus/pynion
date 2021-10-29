@@ -1,5 +1,4 @@
-from pprint import pprint
-from typing import Optional, List, Callable
+from typing import List, Callable
 
 from Middleware import Middleware, sig_handler
 
