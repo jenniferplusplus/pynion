@@ -10,9 +10,9 @@ Simply import `Pynion` along with any middlwares you want to use (currently none
 
 ```python
 from Pynion import Pynion
-from MagicMiddleware import MagicLogsMiddleware, MagicAuthMiddleware
+from MagicMiddleware import MagicLogs, MagicAuth
 
-def handler_fn(event: dict, context: dict, abort: Callable, raw_event: dict):
+def controller_fn(event: dict, context: dict, abort: Callable, raw_event: dict):
     # do processing on the event and context
     # raw_event is the original, unmodified event as provided by the serverless function invocation
     
@@ -20,12 +20,25 @@ def handler_fn(event: dict, context: dict, abort: Callable, raw_event: dict):
         return abort({"abort": "data"})
     return {"your": "data"}
 
-handler = Pynion(handler_fn).use(MagicLogsMiddleware).use(MagicAuthMiddleware)
+handler = Pynion(controller_fn).use(MagicLogs).use(MagicAuth)
 ```
 
-In the above example, the first thing to execute would be the `MagicAuthMiddleware`. This would presumably validate some authentication credentials, and could enrich the event dict with information such as permissions, roles, scope, or any other data. Likewise, the magic logs middleware could perform basic generic logging.
+In the above example, `handler` is a function with event and context parameters. It will be invoked by AWS Lambda, and it will execute the middleware and `controller_fn`, like so:
+```
+Function Invocation
+│
+├ MagicLogs
+│
+├ MagicAuth
+│
+├ controller_fn
+│
+├ MagicAuth
+│
+└ MagicLogs
+```
 
-After that, the handler_fn would execute. Then the middlewares would execute again in reverse order, beginning with auth, then logs. If a middleware has nothing to do at either the inbound pre-handler phase, or the outbound post-handler phase, then it can simply do nothing.
+If a middleware has nothing to do at either the inbound pre-handler phase, or the outbound post-handler phase, then it can simply do nothing.
 
 In the event an exception was raised, error handlers provided by first the logs then the auth middlewares would have an opportunity to react. If the exception is handled, normal execution will continue. Otherwise, the exception will be re-raised to the serverless function invocation.
 
