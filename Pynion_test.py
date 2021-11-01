@@ -77,11 +77,13 @@ def test_can_add_multiple():
 
 def test_can_execute_handler(mocker: MockFixture):
     handler = mocker.stub()
+    handler.return_value = 'mocked return value'
     pyn = Pynion(handler)
 
-    pyn({}, {})
+    actual = pyn({}, {})
 
     assert handler.call_count == 1
+    assert actual == 'mocked return value'
 
 
 def test_can_execute_pre_handlers(mocker: MockFixture):
