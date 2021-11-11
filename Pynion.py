@@ -7,19 +7,36 @@ class Pynion:
     def __init__(self, handler: sig_handler):
         self._stack: List[Middleware] = []
         self._handler = handler
+        self._aborted: bool = False
+        self._result: object = None
 
         return
 
+    @property
+    def aborted(self) -> bool:
+        return self._aborted
+
+    @aborted.setter
+    def aborted(self, value: bool):
+        self._aborted = value
+
+    @property
+    def result(self):
+        return self._result
+
+    @result.setter
+    def result(self, value):
+        self._result = value if not self.aborted else self._result
+
     def __call__(self, event: dict, context: dict):
-        result = event.copy()
-        aborted = False
+        self.result = event.copy()
 
         def fn_abort(value):
             """The abort callback"""
-            nonlocal result
-            nonlocal aborted
-            result = value
-            aborted = True
+            nonlocal self
+            # nonlocal aborted
+            self.result = value
+            self.aborted = True
 
         # noinspection PyShadowingNames
         def on_error(err_fns, ex, result, context) -> object:
@@ -32,29 +49,27 @@ class Pynion:
         err_handlers = [handler.err_handler for handler in self._stack if handler.err_handler]
         pre_handlers = [handler.pre_handler for handler in self._stack if handler.pre_handler]
         for pre in pre_handlers:
-            if aborted: return result
+            if self.aborted: return self.result
             try:
-                # TODO: better solution for this `or result` pattern
-                # Consider moving result and aborted to class vars, add accessor properties
-                result = pre(result, context, fn_abort, event) or result
+                self.result = pre(self.result, context, fn_abort, event)
             except Exception as ex:
-                result = on_error(err_handlers, ex, result, context) or result
+                self.result = on_error(err_handlers, ex, self.result, context)
 
-        if aborted: return result
+        if self.aborted: return self.result
         try:
-            result = self._handler(result, context, fn_abort, event) or result
+            self.result = self._handler(self.result, context, fn_abort, event)
         except Exception as ex:
-            result = on_error(err_handlers, ex, result, context) or result
+            self.result = on_error(err_handlers, ex, self.result, context)
 
         post_handlers = [handler.post_handler for handler in self._stack if handler.post_handler][::-1]
         for post in post_handlers:
-            if aborted: return result
+            if self.aborted: return self.result
             try:
-                result = post(result, context, fn_abort, event) or result
+                self.result = post(self.result, context, fn_abort, event)
             except Exception as ex:
-                result = on_error(err_handlers, ex, result, context) or result
+                self.result = on_error(err_handlers, ex, self.result, context)
 
-        return result
+        return self.result
 
     def use(self, middleware: Middleware):
         """Add a full middleware handler to the stack"""
